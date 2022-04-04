@@ -1,0 +1,95 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:fragment="content(args)" th:remove="tag">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header card-header-primary">
+                            <h4 class="card-title">Date Personale</h4>
+                        </div>
+                        <div class="card-body">
+                            <form th:object="${args}">
+                                <div class="row my-2">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="usernameInput" class="bmd-label-floating">Nume</label>
+                                            <input type="text" class="form-control" id="usernameInput" th:value="*{secondName}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Prenume</label>
+                                            <input type="text" class="form-control" th:value="*{firstName}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row my-2">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">CNP</label>
+                                            <input type="text" class="form-control" th:value="*{cnp}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row my-2">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Adresa</label>
+                                            <input type="text" class="form-control" th:value="*{address}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row my-2">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Email</label>
+                                            <input type="text" class="form-control" th:value="*{email}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Telefon</label>
+                                            <input type="text" class="form-control" th:value="*{phone}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row my-2">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">IBAN</label>
+                                            <input type="text" class="form-control" th:value="*{iban}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Nr. Contract</label>
+                                            <input type="text" class="form-control" th:value="*{contract}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card card-profile">
+                        <div class="card-avatar">
+                            <a href="#pablo">
+                                <img class="img" src="res/material-dashboard/img/faces/download.jpg" />
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-category" th:text="${args.typeName}">CEO / Co-Founder</h6>
+                            <h4 class="card-title" th:text="${args.secondName} + ' ' + ${args.firstName}">Pablo</h4>
+                            <br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>

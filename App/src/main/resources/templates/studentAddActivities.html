@@ -1,0 +1,194 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Activitati</h4>
+                        <p class="card-category"> </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="activitiesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal">
+    </div>
+    <script defer async>
+        $(document).ready(function() {
+            var $table = $('#activitiesTable');
+            var activitiesTable = $table.DataTable({
+                "pageLength": 15,
+                "lengthChange": false,
+                "searching": false,
+                "select": true,
+                "ajax": {
+                    url: "/student/calendar",
+                    type: "POST",
+                    cache: false,
+                    dataSrc: function(json) {
+                        // if(json.data && json.data.length == 1) {
+                        //     coursesTable.buttons(['.edit']).enable(true);
+                        //     $("#professors").removeAttr("hidden");  
+                        // }
+                        // else {
+                        //     coursesTable.buttons().enable(false);
+                        //     $("#professors").attr("hidden", true);
+                        //     $("#students").attr("hidden", true);
+                        // }
+
+                        json.data.forEach(el => {
+                            if(el.exam == true) {
+                                el.activityName = el.examName;
+                            }
+
+                            el.students = el.currStudentsNb + " / " + el.studentsNb;
+
+                            var date = moment(el.startDate, "YYYY-MM-DD HH:mm:ss");
+
+                            var day = date.format("dddd");
+                            switch (day) {
+                                case "Monday":
+                                    el.dayOfWeek = "Luni";
+                                    break;
+                                case "Tuesday":
+                                    el.dayOfWeek = "Marti";
+                                    break;
+                                case "Wednesday":
+                                    el.dayOfWeek = "Miercuri";
+                                    break;
+                                case "Thursday":
+                                    el.dayOfWeek = "Joi";
+                                    break;
+                                case "Friday":
+                                    el.dayOfWeek = "Vineri";
+                                    break;
+                                case "Saturday":
+                                    el.dayOfWeek = "Sambata";
+                                    break;
+                                case "Sunday":
+                                    el.dayOfWeek = "Duminica";
+                                    break;
+                            }
+
+                            el.time = date.format("LT");
+
+                            el.startDate = moment(el.startDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+                            el.endDate = moment(el.endDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+                        });
+
+                        return json.data;
+                    }
+                },
+                "columns": [
+                    { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                    { "data": "activityName", "name": "activityName", "title": "Activitate" },
+                    { "data": "courseName", "name": "courseName", "title": "Curs" },
+                    { "data": "year", "name": "year", "title": "An" },
+                    { "data": "dayOfWeek", "name": "dayOfWeek", "title": "Zi" },
+                    { "data": "time", "name": "time", "title": "Ora" },
+                    { "data": "startDate", "name": "startDate", "title": "Data inceperii" },
+                    { "data": "endDate", "name": "endDate", "title": "Data terminarii" },
+                    { "data": "studentsNb", "name": "studentsNb", "title": "Nr. maxim studenti", visible: false },
+                    { "data": "students", "name": "students", "title": "Locuri" },
+                    { "data": "enrollmentStatus", "name": "enrollmentStatus", "title": "Status" }
+                ],
+                dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                        "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                buttons: [
+                    
+                ]
+            });
+
+            activitiesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+
+                activitiesTable.buttons( 1, ['.edit'] ).enable(
+                    activitiesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+            } );
+
+            new $.fn.dataTable.Buttons( activitiesTable, {
+                buttons: [
+                    { text: "Alege", className: "btn btn-primary edit", action: function(e, dt, node, action) {addActivity(dt)}, attr: {disabled: true} }
+                ]
+            } );
+
+            activitiesTable.buttons( 1, null ).container().prependTo(
+                $(activitiesTable.table().container()).find(".dataTables_crud_buttons")
+            );
+
+            function addActivity(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    if(target['students'] == target['studentsNb']) {
+                        var response = {};
+                        response.type = "danger";
+                        response.message = "Nu mai este loc la aceasta activitate !";
+                        showNotification(response);
+
+                        return;
+                    }
+
+                    var myUrl = "/student/activities/add/" + target['id'];
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            if(response.success == true) {
+                                response.type = "success";
+                                response.message = "Adaugarea a fost facuta cu succes !";
+                                dt.ajax.reload();
+                                dt.buttons().enable(false);
+                            }
+                            else {
+                                response.type = "danger";
+                            }
+
+                            showNotification(response);
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+            
+            function showNotification(response) {
+                $.notify({
+                    icon: "add_alert",
+                    message: response.message
+
+                },{
+                    type: response.type,
+                    timer: 3000,
+                    placement: {
+                        from: "bottom",
+                        align: "right"
+                    }
+                });
+            }
+        });
+
+
+    </script>
+</div>
+</html>

@@ -1,0 +1,233 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Activitati programate</h4>
+                        <p class="card-category"> </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="activitiesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal">
+    </div>
+    <script defer async>
+            $(document).ready(function() {
+                var $table = $('#activitiesTable');
+                var activitiesTable = $table.DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/professor/calendar",
+                        type: "POST",
+                        cache: false,
+                        dataSrc: function(json) {
+
+                            json.data.forEach(el => {
+                                if(el.exam == true) {
+                                    el.activityName = el.examName;
+                                }
+
+                                el.students = el.currStudentsNb + " / " + el.studentsNb;
+
+                                var date = moment(el.startDate, "YYYY-MM-DD HH:mm:ss");
+
+                                var day = date.format("dddd");
+                                switch (day) {
+                                    case "Monday":
+                                        el.dayOfWeek = "Luni";
+                                        break;
+                                    case "Tuesday":
+                                        el.dayOfWeek = "Marti";
+                                        break;
+                                    case "Wednesday":
+                                        el.dayOfWeek = "Miercuri";
+                                        break;
+                                    case "Thursday":
+                                        el.dayOfWeek = "Joi";
+                                        break;
+                                    case "Friday":
+                                        el.dayOfWeek = "Vineri";
+                                        break;
+                                    case "Saturday":
+                                        el.dayOfWeek = "Sambata";
+                                        break;
+                                    case "Sunday":
+                                        el.dayOfWeek = "Duminica";
+                                        break;
+                                }
+
+                                el.time = date.format("LT");
+
+                                el.startDate = moment(el.startDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+                                el.endDate = moment(el.endDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+                            });
+
+                            return json.data;
+                        }
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "activityName", "name": "activityName", "title": "Activitate" },
+                        { "data": "courseName", "name": "courseName", "title": "Curs" },
+                        { "data": "year", "name": "year", "title": "An" },
+                        { "data": "dayOfWeek", "name": "dayOfWeek", "title": "Zi" },
+                        { "data": "time", "name": "time", "title": "Ora" },
+                        { "data": "startDate", "name": "startDate", "title": "Data inceperii" },
+                        { "data": "endDate", "name": "endDate", "title": "Data terminarii" },
+                        { "data": "studentsNb", "name": "studentsNb", "title": "Nr. maxim studenti", visible: false },
+                        { "data": "students", "name": "students", "title": "Locuri" }
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        {"extend": "copyHtml5", exportOptions: {columns: ':visible'}, "text": "Copiaza", "titleAttr": "Copiaza", "className": "btn btn-primary"},
+                        {"extend": "excelHtml5", exportOptions: {columns: ':visible'}, "text": "Excel", "titleAttr": "Excel", "className": "btn btn-primary ml-1"},
+                        {"extend": "pdfHtml5", exportOptions: {columns: ':visible'}, "text": "Pdf", "titleAttr": "Pdf", "className": "btn btn-primary ml-1"},
+                        {"extend": "print", exportOptions: {columns: ':visible'}, "text": "Imprima", "titleAttr": "Imprima", "className": "btn btn-primary ml-1"}
+                    ]
+                });
+
+                // activitiesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+
+                //     activitiesTable.buttons( 1, ['.edit'] ).enable(
+                //         activitiesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                // } );
+
+                new $.fn.dataTable.Buttons( activitiesTable, {
+                    buttons: [
+                        { text: "Adauga activitate", className: "btn btn-primary edit", action: function(e, dt, node, action) {getForm(dt)}, attr: {disabled: false} }
+                    ]
+                } );
+
+                activitiesTable.buttons( 1, null ).container().prependTo(
+                    $(activitiesTable.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function getForm(dt) {
+                    var myUrl = "/professor/activities/get";
+
+                    $.ajax({
+                        type: "GET",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+
+                            $("#changeForm").validate({
+                                errorClass: "has-error",
+                                validClass: "has-success",
+                                rules: {
+                                    studentsNb: {
+                                        required: true,
+                                        digits: true
+                                    }
+                                },
+                                submitHandler: function (form) {
+                                    // console.log("click!");
+                                    // return false;
+                                    var dataToSend = $("#changeForm").serialize();
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "/professor/activities/add",
+                                        data: dataToSend,
+                                        dataType: 'json',
+                                        success: function(response) {
+                                            console.log(response)
+                                            if(response.redirect) {
+                                                window.location.href = response.redirect;
+                                                return;
+                                            }
+
+                                            if(response.success == true) {
+                                                response.type = "success";
+                                                response.message = "Adaugarea a fost facuta cu succes !";
+                                                dt.ajax.reload(null, false);
+                                                $("#exampleModal").modal('hide');
+                                            }
+                                            else {
+                                                response.type = "danger";
+                                            }
+
+                                            showNotification(response);
+                                        },
+                                        error: function(xhr, textStatus, errorThrown) {
+                                            alert('Error! Status = ' + xhr.status);
+                                        }
+                                    });
+                                    console.log($("#changeForm").serialize());
+                                }
+                            });
+
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+                
+                function showNotification(response) {
+                    $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+
+                var bifa = $('<div class="form-check ml-2 my-auto"> \
+                                  <label class="form-check-label"> \
+                                      <input class="form-check-input" type="checkbox"> \
+                                        Curente \
+                                      <span class="form-check-sign"> \
+                                        <span class="check"></span> \
+                                      </span> \
+                                  </label> \
+                                </div>');
+                
+                bifa.find("input").on('change', function(e) {
+                    e.preventDefault();
+                    if(this.checked) {
+                        activitiesTable.ajax.url("/professor/calendar/now").load();
+                    }
+                    else {
+                        activitiesTable.ajax.url("/professor/calendar").load();
+                    }
+                    
+                });
+
+                $(activitiesTable.table().container()).find(".dataTables_crud_buttons").append(bifa);
+            });
+
+
+        </script>
+</div>
+</html>

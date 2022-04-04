@@ -1,0 +1,58 @@
+<!doctype html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+        <title>Hello, world!</title>
+
+        <th:block th:replace="fragments::css"/>
+    </head>
+
+    <body class="dark-edition">
+        <div class="wrapper">
+            <th:block th:replace="fragments::sidebar(args=${obj})"/>
+
+            <div class="main-panel">
+                <th:block th:replace="fragments::navbar"/>
+                <div id="content" class="content" th:insert="${view}::content(args=${obj})"></div>
+                <th:block th:replace="fragments::footer"/>
+            </div>
+        </div>
+
+        <th:block th:replace="fragments::js"/>
+        <script>
+            function myFunction() {
+                console.log('haha');
+            }
+
+            function doStuff(e, url) {
+                if($(e.target).hasClass("active")) return;
+                $('#sidebar').find('.active').removeClass("active");
+                $(e.target).closest("li").addClass("active");
+
+                doMoreStuff(url);
+            }
+
+            function doMoreStuff(url) {
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    dataType: 'json',
+                    success: function(response) {
+                        //console.log(response);
+                        if(response.redirect) {
+                            window.location.href = response.redirect;
+                            return;
+                        }
+
+                        $("#content").html(response.data);
+                    },
+                    error: function(xhr, textStatus, errorThrown) {
+                        alert('Error! Status = ' + xhr.status);
+                    }
+                });
+            }
+        </script>
+    </body>
+
+</html>

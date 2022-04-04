@@ -1,0 +1,41 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:remove="tag">
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"><th:block th:text="${title}"/></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="changeForm" th:object="${groupFormModel}" autocomplete="off">
+                        <div class="modal-body">
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Materie</label>
+                                <select name="id" class="form-control" th:disabled="${readonly==true}">
+                                    <th:block th:each="course : ${courses}">
+                                        <option th:value="${course.id}" th:text="${course.name}" th:selected="${value!=null && course.id==value}"></option>
+                                    </th:block>
+                                </select>
+                                <input type="hidden" name="id" th:value="${value}" th:disabled="${readonly!=true}"/>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Nume grup</label>
+                                <input type="text" class="form-control" name="name" th:value="${name != null ? name : ''}">
+                            </div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary mr-2">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>

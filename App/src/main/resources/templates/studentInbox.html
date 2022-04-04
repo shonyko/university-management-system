@@ -1,0 +1,81 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Inbox</h4>
+                        <p class="card-category"> </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="inboxTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal">
+    </div>
+    <script defer async>
+        $(document).ready(function() {
+            var $table = $('#inboxTable');
+            var inboxTable = $table.DataTable({
+                "pageLength": 15,
+                "lengthChange": false,
+                "searching": false,
+                "select": false,
+                "ordering": false,
+                "ajax": {
+                    url: "/student/inbox/get",
+                    type: "POST",
+                    cache: false,
+                    dataSrc: function(json) {
+
+                        return json.data;
+                    }
+                },
+                "columns": [
+                    { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                    { "data": "studentId", "name": "studentId", "title": "ID Student", visible: false },
+                    { "data": "title", "name": "title", "title": "Titlu" },
+                    { "data": "message", "name": "title", "message": "Mesaj" }
+                ],
+                dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                        "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                buttons: [
+                    { text: "Refresh", className: "btn btn-primary", action: function(e, dt, node, action) {refreshData(dt);} }
+                ]
+            });
+
+            function refreshData(dt) {
+                dt.ajax.reload();
+            }
+
+            function showNotification(response) {
+                $.notify({
+                    icon: "add_alert",
+                    message: response.message
+
+                },{
+                    type: response.type,
+                    timer: 3000,
+                    placement: {
+                        from: "bottom",
+                        align: "right"
+                    }
+                });
+            }
+        });
+
+
+    </script>
+</div>
+</html>

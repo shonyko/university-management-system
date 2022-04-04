@@ -1,0 +1,290 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    <div class="container-fluid">
+        <div id="modal"/>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Cursuri</h4>
+                        <p class="card-category"> Selecteaza un curs pentru a incepe</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="coursesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Studenti</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="studentsTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Catalog</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="catalogTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script defer async>
+            $(document).ready(function() {
+                var $table = $('#coursesTable');
+                var coursesTable = $table.DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/professor/courses/assigned",
+                        type: "POST",
+                        cache: false,
+                        dataSrc: function(json) {
+                            // if(json.data && json.data.length == 1) {
+                            //     coursesTable.buttons(['.edit']).enable(true);
+                            //     $("#professors").removeAttr("hidden");  
+                            // }
+                            // else {
+                            //     coursesTable.buttons().enable(false);
+                            //     $("#professors").attr("hidden", true);
+                            //     $("#students").attr("hidden", true);
+                            // }
+
+                            return json.data;
+                        }
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "name", "name": "name", "title": "Nume" },
+                        { "data": "description", "name": "description", "title": "Descriere" },
+                        { "data": "year", "name": "year", "title": "An" }
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        
+                    ]
+                });
+
+                coursesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                    if(coursesTable.rows( { selected: true } ).indexes().length === 0) {
+                        studentsTable.ajax.url( "/empty" ).load();
+                        studentsTable.buttons().enable(false);
+
+                        catalogTable.ajax.url( "/empty" ).load();
+                        catalogTable.buttons().enable(false);
+                    }
+                    else {
+                        studentsTable.ajax.url( "/professor/catalog/" + coursesTable.rows( { selected: true } ).data()[0]['name'] + "/students" ).load();
+
+                        catalogTable.ajax.url( "/professor/catalog/" + coursesTable.rows( { selected: true } ).data()[0]['name'] ).load();
+                        catalogTable.buttons().enable(true);
+                    }
+
+                    // coursesTable.buttons( 1, ['.edit'] ).enable(
+                    //     coursesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                } );
+
+                // new $.fn.dataTable.Buttons( coursesTable, {
+                //     buttons: [
+                //         { text: "Filtreaza studenti", className: "btn btn-primary edit", action: function(e, dt, node, action) {doStuff(dt)}, attr: {disabled: true} }
+                //     ]
+                // } );
+
+                // coursesTable.buttons( 1, null ).container().prependTo(
+                //     $(coursesTable.table().container()).find(".dataTables_crud_buttons")
+                // );
+
+                var studentsTable = $("#studentsTable").DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/empty",
+                        type: "POST"
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "secondName", "name": "secondName", "title": "Nume" },
+                        { "data": "firstName", "name": "firstName", "title": "Prenume" },
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+
+                    ]
+                });
+
+                studentsTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                    studentsTable.buttons( 1, ['.edit'] ).enable(
+                        studentsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                } );
+
+                new $.fn.dataTable.Buttons( studentsTable, {
+                    buttons: [
+                        { text: "Adauga Note", className: "btn btn-primary edit", action: function(e, dt, node, action) {getForm(dt)}, attr: {disabled: true} }
+                    ]
+                } );
+
+                studentsTable.buttons( 1, null ).container().prependTo(
+                    $(studentsTable.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function getForm(dt) {
+                    var target = dt.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        var myUrl = "/professor/catalog/" + coursesTable.rows( { selected: true } ).data()[0]['name'] + "/" + studentsTable.rows( { selected: true } ).data()[0]['id'];
+
+                        $.ajax({
+                            type: "GET",
+                            url:  myUrl,
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response);
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+
+                                $("#modal").html(response.data);
+
+                                $("#changeForm").validate({
+                                    errorClass: "has-error",
+                                    validClass: "has-success",
+                                    submitHandler: function (form) {
+                                        // console.log("click!");
+                                        // return false;
+                                        var dataToSend = $("#changeForm").serialize();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "/professor/catalog/add",
+                                            data: dataToSend,
+                                            dataType: 'json',
+                                            success: function(response) {
+                                                console.log(response)
+                                                if(response.redirect) {
+                                                    window.location.href = response.redirect;
+                                                    return;
+                                                }
+
+                                                if(response.success == true) {
+                                                    response.type = "success";
+                                                    response.message = "Adaugarea a fost facuta cu succes !";
+                                                    dt.ajax.reload();
+                                                    $("#exampleModal").modal('hide');
+                                                    dt.buttons().enable(false);
+
+                                                    catalogTable.ajax.reload(null, false);
+                                                }
+                                                else {
+                                                    response.type = "danger";
+                                                }
+
+                                                showNotification(response);
+                                            },
+                                            error: function(xhr, textStatus, errorThrown) {
+                                                alert('Error! Status = ' + xhr.status);
+                                            }
+                                        });
+                                        console.log($("#changeForm").serialize());
+                                    }
+                                });
+
+                                $("#exampleModal").modal();
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+                }
+                
+                
+                var catalogTable = $("#catalogTable").DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/empty",
+                        type: "POST"
+                    },
+                    "columns": [
+                        { "data": "professorId", "name": "professorId", "title": "ID Prof", "width": "40", visible: false },
+                        { "data": "professorName", "name": "professorName", "title": "Nume Profesor", visible: false },
+                        { "data": "studentId", "name": "studentId", "title": "ID Student", visible: false },
+                        { "data": "studentName", "name": "studentName", "title": "Nume Student" },
+                        { "data": "courseId", "name": "courseId", "title": "ID Curs", visible: false },
+                        { "data": "courseName", "name": "courseName", "title": "Curs" },
+                        { "data": "teachingId", "name": "teachingId", "title": "ID Predare", visible: false },
+                        { "data": "activityId", "name": "activityId", "title": "ID activitate", visible: false },
+                        { "data": "activityName", "name": "activityName", "title": "Nume Activitate" },
+                        { "data": "grade", "name": "grade", "title": "Nota" },
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        {"extend": "copyHtml5", exportOptions: {columns: ':visible'}, "text": "Copiaza", "titleAttr": "Copiaza", "className": "btn btn-primary", attr: {disabled: true}},
+                        {"extend": "excelHtml5", exportOptions: {columns: ':visible'}, "text": "Excel", "titleAttr": "Excel", "className": "btn btn-primary ml-1", attr: {disabled: true}},
+                        {"extend": "pdfHtml5", exportOptions: {columns: ':visible'}, "text": "Pdf", "titleAttr": "Pdf", "className": "btn btn-primary ml-1", attr: {disabled: true}},
+                        {"extend": "print", exportOptions: {columns: ':visible'}, "text": "Imprima", "titleAttr": "Imprima", "className": "btn btn-primary ml-1", attr: {disabled: true}}
+                    ]
+                });
+
+                
+                function showNotification(response) {
+                    $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+            });
+
+
+        </script>
+</div>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+        <title>Login</title>
+
+        <th:block th:replace="fragments::css"/>
+    </head>
+
+    <body class="dark-edition align-items-center">
+
+        <div class="wrapper">
+            <input id="hasError" th:value="${hasError}" hidden>
+
+            <!-- Modal -->
+            <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <label th:text="${error} + ''"/>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<!--            End Modal-->
+
+<!--            Main Content-->
+            <div class="container">
+                <form id="Login">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card-group">
+                                <div class="card p-4">
+                                    <div class="card-body">
+                                        <h1>Login</h1>
+                                        <p class="text-muted">Sign In to your account</p>
+                                        <div class="form-group mb-3">
+                                            <label class="bmd-label-floating">Username</label>
+                                            <input name="username" type="text" class="form-control" value="student" autocomplete="off">
+                                        </div>
+                                        <div class="form-group mb-4">
+                                            <label class="bmd-label-floating">Password</label>
+                                            <input name="password" type="password" class="form-control" value="student" autocomplete="off">
+                                            <span class="bmd-help">We'll never share your password with anyone else.</span>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <button name="LoginButton" class="btn btn-primary px-4" type="button">Login</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+<!--        End Main Content-->
+
+        <th:block th:replace="fragments::js"/>
+
+        <script type="text/javascript">
+            $(function () {
+                var $form = $("#Login");
+                var $submitButton = $form.find("[name='LoginButton']");
+
+                $submitButton.on("click",
+                    function (e) {
+                        e.preventDefault();
+                        var dataToSend = $form.serialize();
+
+                        $.ajax({
+                            type: "POST",
+                            url: "/login",
+                            data: dataToSend,
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response)
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+                                else {
+                                    response.message = "Nume sau parola gresite !";
+                                    response.type = "danger";
+
+                                    showNotification(response);
+                                }
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+
+                    })
+
+                function showNotification(response) {
+                        $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+
+                $form.on("keydown", function (e) {
+                    if (e.which == 13) {
+                        $submitButton.click();
+                    }
+                })
+            })
+        </script>
+    </body>
+
+</html>

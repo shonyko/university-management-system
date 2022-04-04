@@ -1,0 +1,209 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:remove="tag">
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"><th:block th:text="${title}"/></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div id="myData" th:data-url="${url}"></div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h1 id="nuSePoate" hidden="true" class="text-danger">Nu se poate !!!</h1>
+                                        <table id="optiuneTable" class="table w-100"></table>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-5">
+                                    <div class="col-md-12">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <h3 class="text-light"><strong>Ferestre activitati grup studiu</strong></h3>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <table id="ferestreTable" class="table w-100"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <script type="text/javascript">
+                                    $(function () {
+                                        var url = $('#myData').data('url');  
+                                        var $table = $('#optiuneTable');
+                                        var optiuneTable = $table.DataTable({
+                                            "pageLength": 15,
+                                            "lengthChange": false,
+                                            "searching": false,
+                                            "select": false,
+                                            "ordering": false,
+                                            "ajax": {
+                                                url: url + "/get",
+                                                type: "POST",
+                                                cache: false,
+                                                dataSrc: function(json) {
+                                                    var newData = [];
+
+                                                    console.log(json);
+                                                    if(json.data.found == false) {
+                                                        doTheThing(false);
+                                                    }
+                                                    else {
+                                                        doTheThing(true);
+                                                        json.data.timetable.forEach((el, i, arr) => {
+                                                            var date = moment(el.startDate, "YYYY-MM-DD HH:mm:ss");
+
+                                                            var day = date.format("dddd");
+                                                            switch (day) {
+                                                                case "Monday":
+                                                                    el.dayOfWeek = "Luni";
+                                                                    break;
+                                                                case "Tuesday":
+                                                                    el.dayOfWeek = "Marti";
+                                                                    break;
+                                                                case "Wednesday":
+                                                                    el.dayOfWeek = "Miercuri";
+                                                                    break;
+                                                                case "Thursday":
+                                                                    el.dayOfWeek = "Joi";
+                                                                    break;
+                                                                case "Friday":
+                                                                    el.dayOfWeek = "Vineri";
+                                                                    break;
+                                                                case "Saturday":
+                                                                    el.dayOfWeek = "Sambata";
+                                                                    break;
+                                                                case "Sunday":
+                                                                    el.dayOfWeek = "Duminica";
+                                                                    break;
+                                                            }
+
+                                                            el.time = date.format("LT");
+
+                                                            el.startDate = moment(el.startDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+                                                            el.endDate = moment(el.endDate, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY");
+
+                                                            newData.push(el);
+                                                        });
+                                                    }
+
+                                                    return newData;
+                                                }
+                                            },
+                                            "columns": [
+                                            { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                                            { "data": "activityName", "name": "activityName", "title": "Activitate" },
+                                            { "data": "courseName", "name": "courseName", "title": "Curs" },
+                                            { "data": "year", "name": "year", "title": "An" },
+                                            { "data": "dayOfWeek", "name": "dayOfWeek", "title": "Zi" },
+                                            { "data": "time", "name": "time", "title": "Ora" },
+                                            { "data": "startDate", "name": "startDate", "title": "Data inceperii" },
+                                            { "data": "endDate", "name": "endDate", "title": "Data terminarii" }
+                                            ],
+                                            dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                                                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                                                    "<'row'<'col-sm-12'tr>>" +
+                                                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                                            buttons: [
+                                                {"extend": "copyHtml5", exportOptions: {columns: ':visible'}, "text": "Copiaza", "titleAttr": "Copiaza", "className": "btn btn-primary"},
+                                                {"extend": "excelHtml5", exportOptions: {columns: ':visible'}, "text": "Excel", "titleAttr": "Excel", "className": "btn btn-primary ml-1"},
+                                                {"extend": "pdfHtml5", exportOptions: {columns: ':visible'}, "text": "Pdf", "titleAttr": "Pdf", "className": "btn btn-primary ml-1"},
+                                                {"extend": "print", exportOptions: {columns: ':visible'}, "text": "Imprima", "titleAttr": "Imprima", "className": "btn btn-primary ml-1"}
+                                            ]
+                                        });
+
+                                        function doTheThing(state) {
+                                            $table.attr("hidden", !state);
+                                            $("#nuSePoate").attr("hidden", state);
+                                        }
+
+                                        var ferestreTable = $("#ferestreTable").DataTable({
+                                            "pageLength": 15,
+                                            "lengthChange": false,
+                                            "searching": false,
+                                            "select": false,
+                                            "ordering": false,
+                                            "ajax": {
+                                                url: url + "/windows/get",
+                                                type: "POST",
+                                                cache: false,
+                                                dataSrc: function(json) {
+                                                    json.data.forEach(el => {
+                                                        if(el.professor.secondName) {
+                                                            el.prof = el.professor.secondName + " " + el.professor.firstName;
+                                                        }
+                                                        else {
+                                                            el.prof = " - ";
+                                                        }
+
+                                                        if(el.attendance == 1) {
+                                                            el.participa = "Da";
+                                                        }
+                                                        else {
+                                                            el.participa = "Nu";
+                                                        }
+                                                    });
+
+                                                    return json.data;
+                                                }
+                                            },
+                                            "columns": [
+                                                { "data": "id", "name": "id", "title": "ID", visible: false },
+                                                { "data": "groupId", "name": "groupId", "title": "ID Grup", visible: false },
+                                                { "data": "title", "name": "title", "title": "Titlu" },
+                                                { "data": "description", "name": "description", "title": "Descriere" },
+                                                { "data": "prof", "name": "prof", "title": "Prof" },
+                                                { "data": "date", "name": "date", "title": "Data" },
+                                                //{ "data": "participa", "name": "participa", "title": "Particip" }
+                                            ],
+                                            dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                                                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                                                    "<'row'<'col-sm-12'tr>>" +
+                                                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                                            buttons: [
+                                                {"extend": "copyHtml5", exportOptions: {columns: ':visible'}, "text": "Copiaza", "titleAttr": "Copiaza", "className": "btn btn-primary"},
+                                                {"extend": "excelHtml5", exportOptions: {columns: ':visible'}, "text": "Excel", "titleAttr": "Excel", "className": "btn btn-primary ml-1"},
+                                                {"extend": "pdfHtml5", exportOptions: {columns: ':visible'}, "text": "Pdf", "titleAttr": "Pdf", "className": "btn btn-primary ml-1"},
+                                                {"extend": "print", exportOptions: {columns: ':visible'}, "text": "Imprima", "titleAttr": "Imprima", "className": "btn btn-primary ml-1"}
+                                            ]
+                                        });
+
+                                        function showNotification(response) {
+                                            $.notify({
+                                                icon: "add_alert",
+                                                message: response.message
+
+                                            },{
+                                                type: response.type,
+                                                timer: 3000,
+                                                placement: {
+                                                    from: "bottom",
+                                                    align: "right"
+                                                }
+                                            });
+                                        }
+                                    });
+                                </script>
+                            </div>
+                        </div>
+                    </div>   
+                    
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>

@@ -1,0 +1,351 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:fragment="content(args)" th:remove="tag">
+        <div class="container-fluid">
+            <div id="modal"/>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header card-header-primary">
+                            <h4 class="card-title ">Simple Table</h4>
+                            <p class="card-category"> Here is a subtitle for this table</p>
+                        </div>
+                        <div class="card-body">
+                            <form id="filter">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <div class="form-group">
+                                            <label for="input1" class="bmd-label-floating">Nume</label>
+                                            <input type="text" class="form-control" name="secondName" id="input1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="form-group">
+                                            <label class="bmd-label-floating">Prenume</label>
+                                            <input type="text" class="form-control" name="firstName">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 my-auto">
+                                        <button class="btn btn-primary px-4 align-middle" type="button" id="filterBtn">Filtreaza</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <table id="myDataTable" class="table w-100"></table>    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script defer async>
+            $(document).ready(function() {
+                var $table = $('#myDataTable');
+                var table = $table.DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/users/filter",
+                        type: "POST",
+                        data: function(d) {
+                            // var extra = new FormData($("#filter")[0]);
+                            // return $.extend(true, {}, d, extra);
+                            return $("#filter").serialize();
+                        }
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "typeName", "name": "typeName", "title": "Tip" },
+                        { "data": "cnp", "name": "cnp", "title": "CNP" },
+                        { "data": "secondName", "name": "secondName", "title": "Nume" },
+                        { "data": "firstName", "name": "firstName", "title": "Prenume" },
+                        { "data": "address", "name": "address", "title": "Adresa" },
+                        { "data": "phone", "name": "phone", "title": "Telefon" },
+                        { "data": "email", "name": "email", "title": "Email" },
+                        { "data": "iban", "name": "iban", "title": "IBAN" },
+                        { "data": "contract", "name": "contract", "title": "Nr. Contract" }
+
+                    ],
+                    // "columnDefs": [ {
+                    //         "visible": false,
+                    //         "targets": "_all"
+                    //     },
+                    //     {
+                    //         "visible": true,
+                    //         "targets": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+                    //     }
+                    //  ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +        
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        'copy', 'csv', 'excel', 'pdf', 'print'
+                    ]
+                    // buttons: [
+                    //     { text: "Edit", className: "btn btn-primary mr-1", action: function() {getUpdateForm(table);} },
+                    //     { text: "Delete", className: "btn btn-primary mr-1", action: function() {deleteUser(table);} },
+                    //     { text: "New", className: "btn btn-primary", action: function() {getAddForm(table);} }
+                    // ],
+                    
+                });
+
+                new $.fn.dataTable.Buttons( table, {
+                        buttons: [
+                            { text: "Add", className: "btn btn-primary mr-1", action: function(e, dt, node, action) {getAddForm(dt);} },
+                            { text: "Edit", className: "btn btn-primary mr-1", action: function(e, dt, node, action) {getUpdateForm(dt);} },
+                            { text: "Delete", className: "btn btn-primary", action: function(e, dt, node, action) {deleteUser(dt);} }
+                        ]
+                    } );
+
+                table.buttons( 1, null ).container().prependTo(
+                    $(table.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function getUpdateForm(t) {
+                    var target = t.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        $.ajax({
+                            type: "GET",
+                            url: "/users/" + target['id'],
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response);
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+
+                                $("#modal").html(response.data);
+
+                                $("#changeForm").validate({
+                                errorClass: "has-error",
+                                validClass: "has-success",
+                                    rules: {
+                                        cnp: {
+                                            required: true,
+                                            minlength: 13,
+                                            maxlength: 13
+                                        },
+                                        secondName: {
+                                            required: true
+                                        },
+                                        firstName: {
+                                            required: true
+                                        },
+                                        address: {
+                                            required: true
+                                        },
+                                        phone: {
+                                            required: true
+                                        },
+                                        email: {
+                                            required: true
+                                        },
+                                        iban: {
+                                            required: true
+                                        },
+                                        contract: {
+                                            required: true
+                                        },
+                                        test: {
+                                            required: true
+                                        }
+                                    },
+                                    highlight: function(element, errorClass, validClass) {
+                                        $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                                    },
+                                    unhighlight: function(element, errorClass, validClass) {
+                                        $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                                    },
+                                    submitHandler: function (form) {
+                                        var dataToSend = $("#changeForm").serialize();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "/users/set",
+                                            data: dataToSend,
+                                            dataType: 'json',
+                                            success: function(response) {
+                                                console.log(response)
+                                                if(response.redirect) {
+                                                    window.location.href = response.redirect;
+                                                    return;
+                                                }
+
+                                                t.ajax.reload();
+
+                                                $("#exampleModal").modal('hide');
+                                            },
+                                            error: function(xhr, textStatus, errorThrown) {
+                                                alert('Error! Status = ' + xhr.status);
+                                            }
+                                        });
+                                        console.log($("#changeForm").serialize());
+                                    }
+                                });
+
+                                $("#exampleModal").modal();
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+                }
+
+                function getAddForm(t) {
+                    $.ajax({
+                        type: "GET",
+                        url: "/users/add",
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+
+                            $("#changeForm").validate({
+                            errorClass: "has-error",
+                            validClass: "has-success",
+                                rules: {
+                                    cnp: {
+                                        required: true,
+                                        minlength: 13,
+                                        maxlength: 13
+                                    },
+                                    secondName: {
+                                        required: true
+                                    },
+                                    firstName: {
+                                        required: true
+                                    },
+                                    address: {
+                                        required: true
+                                    },
+                                    phone: {
+                                        required: true
+                                    },
+                                    email: {
+                                        required: true
+                                    },
+                                    iban: {
+                                        required: true
+                                    },
+                                    contract: {
+                                        required: true
+                                    },
+                                    test: {
+                                        required: true
+                                    }
+                                },
+                                highlight: function(element, errorClass, validClass) {
+                                    $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                                },
+                                unhighlight: function(element, errorClass, validClass) {
+                                    $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                                },
+                                submitHandler: function (form) {
+                                    var dataToSend = $("#changeForm").serialize();
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "/users/set",
+                                        data: dataToSend,
+                                        dataType: 'json',
+                                        success: function(response) {
+                                            console.log(response)
+                                            if(response.redirect) {
+                                                window.location.href = response.redirect;
+                                                return;
+                                            }
+
+                                            if(response.success == true) {
+                                                response.type = "success";
+                                                response.message = "Adaugarea a fost facuta cu succes !";
+                                                t.ajax.reload();
+                                            }
+                                            else {
+                                                response.message = "Adaugarea a esuat !";
+                                                response.type = "danger";
+                                            }
+
+                                            $("#exampleModal").modal('hide');
+
+                                            showNotification(response);
+                                        },
+                                        error: function(xhr, textStatus, errorThrown) {
+                                            alert('Error! Status = ' + xhr.status);
+                                        }
+                                    });
+                                    console.log($("#changeForm").serialize());
+                                }
+                            });
+
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+
+                }
+                
+                function deleteUser(t) {
+                    var target = t.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        $.ajax({
+                            type: "DELETE",
+                            url: "/users/" + target['id'],
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response)
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+                                
+                                t.ajax.reload();
+
+                                $("#exampleModal").modal('hide');
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+                }
+            
+                function showNotification(response) {
+                    $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+                
+                $("#filterBtn").on("click", function (e) {
+                    e.preventDefault();
+                    
+                    table.ajax.reload(null, false);
+                })
+            });
+
+            
+        </script>
+    </div>
+</html>

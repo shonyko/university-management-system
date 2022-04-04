@@ -1,0 +1,572 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Grupurile mele de studiu</h4>
+                        <p class="card-category"> </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="myGroupsTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Grupuri de studiu</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="myNotGroupsTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal">
+    </div>
+    <div id="altModal">
+    </div>
+    <script defer async>
+        $(document).ready(function() {
+            var $table = $('#myGroupsTable');
+            var myGroupsTable = $table.DataTable({
+                "pageLength": 15,
+                "lengthChange": false,
+                "searching": false,
+                "select": true,
+                "ordering": false,
+                "ajax": {
+                    url: "/student/study/joinedGroups",
+                    type: "POST",
+                    cache: false,
+                    dataSrc: function(json) {
+
+                        return json.data;
+                    }
+                },
+                "columns": [
+                    { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                    { "data": "courseId", "name": "courseId", "title": "ID Materie", visible: false },
+                    { "data": "name", "name": "name", "title": "Grup" },
+                    { "data": "courseName", "name": "courseName", "title": "Curs" },
+                ],
+                dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                        "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                buttons: [
+                    { text: "Sterge grup", className: "btn btn-primary edit", action: function(e, dt, node, action) {deleteGroup(dt);}, attr: {disabled: true} },
+                    { text: "Actualizeaza grup", className: "btn btn-primary edit ml-1", action: function(e, dt, node, action) {getUpdateGroupForm(dt);}, attr: {disabled: true} },
+                    { text: "Creeaza grup", className: "btn btn-primary ml-1", action: function(e, dt, node, action) {getCreateGroupForm(dt);} }
+                ]
+            });
+
+            myGroupsTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                myGroupsTable.buttons( 0, ['.edit'] ).enable(
+                    myGroupsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                myGroupsTable.buttons( 1, ['.edit'] ).enable(
+                    myGroupsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+            } );
+
+            new $.fn.dataTable.Buttons( myGroupsTable, {
+                buttons: [
+                    { text: "Iesi", className: "btn btn-primary edit", action: function(e, dt, node, action) {exitGroup(dt)}, attr: {disabled: true} },
+                    { text: "Participanti", className: "btn btn-primary edit ml-1", action: function(e, dt, node, action) {getMembers(dt)}, attr: {disabled: true} },
+                    { text: "Mesaje", className: "btn btn-primary edit ml-1", action: function(e, dt, node, action) {getMessages(dt)}, attr: {disabled: true} },
+                    { text: "Activitati", className: "btn btn-primary edit ml-1", action: function(e, dt, node, action) {getEvents(dt)}, attr: {disabled: true} }
+                ]
+            } );
+
+            myGroupsTable.buttons( 1, null ).container().prependTo(
+                $(myGroupsTable.table().container()).find(".dataTables_crud_buttons")
+            );
+
+            function addActivity(dt) {
+                console.log("click");
+                return;
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    if(target['students'] == target['studentsNb']) {
+                        var response = {};
+                        response.type = "danger";
+                        response.message = "Nu mai este loc la aceasta activitate !";
+                        showNotification(response);
+
+                        return;
+                    }
+
+                    var myUrl = "/student/activities/add/" + target['id'];
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            if(response.success == true) {
+                                response.type = "success";
+                                response.message = "Adaugarea a fost facuta cu succes !";
+                                dt.ajax.reload();
+                                dt.buttons().enable(false);
+                            }
+                            else {
+                                response.type = "danger";
+                            }
+
+                            showNotification(response);
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+            
+            function getMembers(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/members";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function getMessages(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/messages";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function getEvents(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/events";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            var myNotGroupsTable = $("#myNotGroupsTable").DataTable({
+                "pageLength": 15,
+                "lengthChange": false,
+                "searching": false,
+                "select": true,
+                "ajax": {
+                    url: "/student/study/notJoinedGroups",
+                    type: "POST",
+                    cache: false,
+                    dataSrc: function(json) {
+
+                        return json.data;
+                    }
+                },
+                "columns": [
+                    { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                    { "data": "courseId", "name": "courseId", "title": "ID Materie", visible: false },
+                    { "data": "name", "name": "name", "title": "Grup" },
+                    { "data": "courseName", "name": "courseName", "title": "Curs" },
+                ],
+                dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                        "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                        "<'row'<'col-sm-12'tr>>" +
+                        "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                buttons: [
+                ]
+            });
+
+            myNotGroupsTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+
+                myNotGroupsTable.buttons( 1, ['.edit'] ).enable(
+                    myNotGroupsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+            } );
+
+            new $.fn.dataTable.Buttons( myNotGroupsTable, {
+                buttons: [
+                    { text: "Intra", className: "btn btn-primary edit", action: function(e, dt, node, action) {joinGroup(dt)}, attr: {disabled: true} },
+                ]
+            } );
+
+            myNotGroupsTable.buttons( 1, null ).container().prependTo(
+                $(myNotGroupsTable.table().container()).find(".dataTables_crud_buttons")
+            );
+
+            function joinGroup(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/join";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            if(response.success == true) {
+                                response.type = "success";
+                                response.message = "Adaugarea a fost facuta cu succes !";
+                                dt.ajax.reload(null, false);
+                                dt.buttons( ['.edit'] ).enable(false);
+                                myGroupsTable.ajax.reload(null, false);
+                            }
+                            else {
+                                response.type = "danger";
+                            }
+
+                            showNotification(response);
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function exitGroup(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/exit";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            if(response.success == true) {
+                                response.type = "success";
+                                response.message = "Adaugarea a fost facuta cu succes !";
+                                dt.ajax.reload(null, false);
+                                dt.buttons( ['.edit'] ).enable(false);
+                                myNotGroupsTable.ajax.reload(null, false);
+                            }
+                            else {
+                                response.type = "danger";
+                            }
+
+                            showNotification(response);
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function getCreateGroupForm(dt) {
+                var myUrl = "/student/study/new";
+
+                $.ajax({
+                    type: "GET",
+                    url:  myUrl,
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log(response);
+                        if(response.redirect) {
+                            window.location.href = response.redirect;
+                            return;
+                        }
+
+                        $("#modal").html(response.data);
+
+                        $("#changeForm").validate({
+                        errorClass: "has-error",
+                        validClass: "has-success",
+                            rules: {
+                                course: {
+                                    required: true
+                                },
+                                professor: {
+                                    required: true
+                                },
+                                activity: {
+                                    required: true
+                                }
+                            },
+                            highlight: function(element, errorClass, validClass) {
+                                $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                            },
+                            unhighlight: function(element, errorClass, validClass) {
+                                $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                            },
+                            submitHandler: function (form) {
+                                var dataToSend = $("#changeForm").serialize();
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/student/study/new/set",
+                                    data: dataToSend,
+                                    dataType: 'json',
+                                    success: function(response) {
+                                        console.log(response)
+                                        if(response.redirect) {
+                                            window.location.href = response.redirect;
+                                            return;
+                                        }
+
+                                        if(response.success == true) {
+                                            response.type = "success";
+                                            response.message = "Adaugarea a fost facuta cu succes !";
+                                            dt.ajax.reload(null, false);
+                                            dt.buttons( ['.edit'] ).enable(false);
+                                        }
+                                        else {
+                                            response.message = "Adaugarea a esuat !";
+                                            response.type = "danger";
+                                        }
+
+                                        $("#exampleModal").modal('hide');
+
+                                        showNotification(response);
+                                    },
+                                    error: function(xhr, textStatus, errorThrown) {
+                                        alert('Error! Status = ' + xhr.status);
+                                    }
+                                });
+                                console.log($("#changeForm").serialize());
+                            }
+                        });
+
+                        $("#exampleModal").modal();
+                    },
+                    error: function(xhr, textStatus, errorThrown) {
+                        alert('Error! Status = ' + xhr.status);
+                    }
+                });
+            }
+
+            function getUpdateGroupForm(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/update/" + target['id'];
+
+                    $.ajax({
+                        type: "GET",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            $("#modal").html(response.data);
+
+                            $("#changeForm").validate({
+                            errorClass: "has-error",
+                            validClass: "has-success",
+                                rules: {
+                                    course: {
+                                        required: true
+                                    },
+                                    professor: {
+                                        required: true
+                                    },
+                                    activity: {
+                                        required: true
+                                    }
+                                },
+                                highlight: function(element, errorClass, validClass) {
+                                    $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                                },
+                                unhighlight: function(element, errorClass, validClass) {
+                                    $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                                },
+                                submitHandler: function (form) {
+                                    var dataToSend = $("#changeForm").serialize();
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "/student/study/update/" + target['id'],
+                                        data: dataToSend,
+                                        dataType: 'json',
+                                        success: function(response) {
+                                            console.log(response)
+                                            if(response.redirect) {
+                                                window.location.href = response.redirect;
+                                                return;
+                                            }
+
+                                            if(response.success == true) {
+                                                response.type = "success";
+                                                response.message = "Adaugarea a fost facuta cu succes !";
+                                                dt.ajax.reload(null, false);
+                                                dt.buttons( ['.edit'] ).enable(false);
+                                            }
+                                            else {
+                                                response.message = "Adaugarea a esuat !";
+                                                response.type = "danger";
+                                            }
+
+                                            $("#exampleModal").modal('hide');
+
+                                            showNotification(response);
+                                        },
+                                        error: function(xhr, textStatus, errorThrown) {
+                                            alert('Error! Status = ' + xhr.status);
+                                        }
+                                    });
+                                    console.log($("#changeForm").serialize());
+                                }
+                            });
+
+                            $("#exampleModal").modal();
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function deleteGroup(dt) {
+                var target = dt.rows({ selected: true });
+                if(target && target.data()[0]) {
+                    target = target.data()[0];
+
+                    var myUrl = "/student/study/" + target['id'] + "/delete";
+
+                    $.ajax({
+                        type: "POST",
+                        url:  myUrl,
+                        dataType: 'json',
+                        success: function(response) {
+                            console.log(response);
+                            if(response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+
+                            if(response.success == true) {
+                                response.type = "success";
+                            }
+                            else {
+                                response.type = "danger";
+                            }
+
+                            dt.ajax.reload(null, false);
+                            showNotification(response);
+                        },
+                        error: function(xhr, textStatus, errorThrown) {
+                            alert('Error! Status = ' + xhr.status);
+                        }
+                    });
+                }
+            }
+
+            function showNotification(response) {
+                $.notify({
+                    icon: "add_alert",
+                    message: response.message
+
+                },{
+                    type: response.type,
+                    timer: 3000,
+                    placement: {
+                        from: "bottom",
+                        align: "right"
+                    }
+                });
+            }
+        });
+
+
+    </script>
+</div>
+</html>

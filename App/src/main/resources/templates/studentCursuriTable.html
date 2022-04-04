@@ -1,0 +1,214 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    <div class="container-fluid">
+        <div id="modal"/>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Cursuri la care te poti inscrie</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="joinableCoursesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Cursuri in desfasurare</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="selectedCoursesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script defer async>
+            $(document).ready(function() {
+                var $table = $('#joinableCoursesTable');
+                var joinableCoursesTable = $table.DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/student/joinable",
+                        type: "POST",
+                        cache: false,
+                        dataSrc: function(json) {
+                            // if(json.data && json.data.length == 1) {
+                            //     coursesTable.buttons(['.edit']).enable(true);
+                            //     $("#professors").removeAttr("hidden");  
+                            // }
+                            // else {
+                            //     coursesTable.buttons().enable(false);
+                            //     $("#professors").attr("hidden", true);
+                            //     $("#students").attr("hidden", true);
+                            // }
+
+                            return json.data;
+                        }
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "name", "name": "name", "title": "Nume" },
+                        { "data": "description", "name": "description", "title": "Descriere" },
+                        { "data": "year", "name": "year", "title": "An" }
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        
+                    ]
+                });
+
+                joinableCoursesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                    joinableCoursesTable.buttons( 1, ['.edit'] ).enable(
+                        joinableCoursesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                } );
+
+                new $.fn.dataTable.Buttons( joinableCoursesTable, {
+                    buttons: [
+                        { text: "JOIN", className: "btn btn-primary edit", action: function(e, dt, node, action) {joinCourse(dt);}, attr: {disabled: true} }
+                    ]
+                } );
+
+                joinableCoursesTable.buttons( 1, null ).container().prependTo(
+                    $(joinableCoursesTable.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function joinCourse(t) {
+                    var target = t.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        $.ajax({
+                            type: "POST",
+                            url: "/student/courses/" + target['id'],
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response);
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+
+                                updateTables();
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+
+                    joinableCoursesTable.buttons( 1, ['.edit'] ).enable(false);
+                }
+
+                var selectedCoursesTable = $("#selectedCoursesTable").DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/student/selected",
+                        type: "POST",
+                        cache: false
+                    },
+                    "columns": [
+                    { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "name", "name": "name", "title": "Nume" },
+                        { "data": "description", "name": "description", "title": "Descriere" },
+                        { "data": "year", "name": "year", "title": "An" }
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        
+                    ]
+                });
+
+                selectedCoursesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                    selectedCoursesTable.buttons( 1, ['.edit'] ).enable(
+                        selectedCoursesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                } );
+
+                new $.fn.dataTable.Buttons( selectedCoursesTable, {
+                    buttons: [
+                        { text: "DROP", className: "btn btn-primary edit", action: function(e, dt, node, action) {dropCourse(dt)}, attr: {disabled: true} }
+                    ]
+                } );
+
+                selectedCoursesTable.buttons( 1, null ).container().prependTo(
+                    $(selectedCoursesTable.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function dropCourse(t) {
+                    var target = t.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        $.ajax({
+                            type: "DELETE",
+                            url: "/student/courses/" + target['id'],
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response);
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+
+                                updateTables();
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+
+                    selectedCoursesTable.buttons( 1, ['.edit'] ).enable(false);
+                }
+
+
+                async function updateTables() {
+                    joinableCoursesTable.ajax.reload(null, false);
+                    selectedCoursesTable.ajax.reload(null, false);
+                }
+
+                function showNotification(response) {
+                    $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+            });
+
+
+        </script>
+</div>
+</html>

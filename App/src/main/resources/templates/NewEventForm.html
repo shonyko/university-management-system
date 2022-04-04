@@ -1,0 +1,118 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:remove="tag">
+        <!-- Modal -->
+        <div class="modal fade" id="exampleAltModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"><th:block th:text="${title}"/></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="changeForm" th:object="${eventFormModel}" autocomplete="off">
+                        <div class="modal-body">
+
+                            <input type="hidden" class="form-control" name="groupId" th:value="${id}">
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Titlu</label>
+                                <input type="text" class="form-control" name="title">
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Descriere</label>
+                                <input type="text" class="form-control" name="description">
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Profesor</label>
+                                <select name="professor" class="form-control">
+                                    <option th:value="-1">&nbsp;-&nbsp;</option>
+                                    <th:block th:each="prof : ${professors}">
+                                        <option th:value="${prof.id}" th:text="${prof.secondName + ' ' + prof.firstName}"></option>
+                                    </th:block>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-3" id="date">
+                                <label class="bmd-label-floating" for="datetimepicker1">Data</label>
+                                <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                                    <input type="text" name="date" class="form-control datetimepicker-input" data-target="#datetimepicker1"/>
+                                </div>
+                                <script type="text/javascript">
+                                    $(function () {
+                                        $('#datetimepicker1').datetimepicker({
+                                            defaultDate: moment().add(1, 'days').set({hour:8,minute:0,second:0,millisecond:0}),
+                                            minDate: moment().add(1, 'days').startOf('day'),
+                                            inline: true,
+                                            sideBySide: true,
+                                            keepOpen: true,
+                                            format: "MM/DD/YYYY hh:mm a"
+                                        });
+                                    });
+                                </script>
+                            </div>
+
+                            <div class="form-group mb-3" id="duration">
+                                <label class="bmd-label-floating" for="datetimepicker2">Durata</label>
+                                <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
+                                    <input type="text" name="duration" class="form-control datetimepicker-input" data-target="#datetimepicker2"/>
+                                </div>
+                                <script type="text/javascript">
+                                    $(function () {
+                                        $('#datetimepicker2').datetimepicker({
+                                            defaultDate: moment().set({hour:8,minute:0,second:0,millisecond:0}),
+                                            inline: true,
+                                            sideBySide: true,
+                                            keepOpen: true,
+                                            format: 'HH:mm'
+                                        });
+                                    });
+                                </script>
+                            </div>
+
+                            <!-- <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Durata</label>
+                                <input type="text" class="form-control" name="duration">
+                            </div> -->
+
+                            <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Nr. minim participanti</label>
+                                <input type="text" class="form-control" name="minEntries">
+                            </div>
+
+                            <div class="form-group mb-3" id="availability">
+                                <label class="bmd-label-floating" for="datetimepicker3">Termen de expirare</label>
+                                <div class="input-group date" id="datetimepicker3" data-target-input="nearest">
+                                    <input type="text" name="availability" class="form-control datetimepicker-input" data-target="#datetimepicker3"/>
+                                </div>
+                                <script type="text/javascript">
+                                    $(function () {
+                                        $('#datetimepicker3').datetimepicker({
+                                            defaultDate: moment().set({hour:8,minute:0,second:0,millisecond:0}),
+                                            inline: true,
+                                            sideBySide: true,
+                                            keepOpen: true,
+                                            format: 'HH:mm'
+                                        });
+                                    });
+                                </script>
+                            </div>
+
+                            <!-- <div class="form-group mb-3">
+                                <label class="bmd-label-floating">Termen de expirare</label>
+                                <input type="text" class="form-control" name="availability">
+                            </div> -->
+
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary mr-2">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>

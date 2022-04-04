@@ -1,0 +1,16 @@
+<p>Hello</p>
+<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script type="text/javascript">
+    function doAjaxPost() {
+
+        $.ajax({
+            type: "GET",
+            url: "testare",
+            success: function(response) {
+                $("#subViewDiv").html( response );
+            }
+        });
+    }
+</script>
+<input type="button" value="GO!" onclick="doAjaxPost();" />
+<div id="subViewDiv"></div>

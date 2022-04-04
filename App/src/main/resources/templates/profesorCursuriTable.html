@@ -1,0 +1,175 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+<div th:fragment="content(args)" th:remove="tag">
+    <div class="container-fluid">
+        <div id="modal"/>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-primary">
+                        <h4 class="card-title ">Cursuri</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="coursesTable" class="table w-100"></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script defer async>
+            $(document).ready(function() {
+                var $table = $('#coursesTable');
+                var coursesTable = $table.DataTable({
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "searching": false,
+                    "select": true,
+                    "ajax": {
+                        url: "/professor/courses/assigned",
+                        type: "POST",
+                        cache: false,
+                        dataSrc: function(json) {
+                            // if(json.data && json.data.length == 1) {
+                            //     coursesTable.buttons(['.edit']).enable(true);
+                            //     $("#professors").removeAttr("hidden");  
+                            // }
+                            // else {
+                            //     coursesTable.buttons().enable(false);
+                            //     $("#professors").attr("hidden", true);
+                            //     $("#students").attr("hidden", true);
+                            // }
+
+                            return json.data;
+                        }
+                    },
+                    "columns": [
+                        { "data": "id", "name": "id", "title": "ID", "width": "40", visible: false },
+                        { "data": "name", "name": "name", "title": "Nume" },
+                        { "data": "description", "name": "description", "title": "Descriere" },
+                        { "data": "year", "name": "year", "title": "An" }
+                    ],
+                    dom:    "<'row'<'col-sm-6 dataTables_crud_buttons'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                            "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                    buttons: [
+                        
+                    ]
+                });
+
+                coursesTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+                    coursesTable.buttons( 1, ['.edit'] ).enable(
+                        coursesTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                } );
+
+                new $.fn.dataTable.Buttons( coursesTable, {
+                    buttons: [
+                        { text: "Seteaza ponderi", className: "btn btn-primary edit", action: function(e, dt, node, action) {doStuff(dt)}, attr: {disabled: true} }
+                    ]
+                } );
+
+                coursesTable.buttons( 1, null ).container().prependTo(
+                    $(coursesTable.table().container()).find(".dataTables_crud_buttons")
+                );
+
+                function doStuff(dt) {
+                    var target = dt.rows({ selected: true });
+                    if(target && target.data()[0]) {
+                        target = target.data()[0];
+                        var myUrl = "professor/courses/edit/";
+                        myUrl += target['name'];
+
+                        $.ajax({
+                            type: "GET",
+                            url:  myUrl,
+                            dataType: 'json',
+                            success: function(response) {
+                                console.log(response);
+                                if(response.redirect) {
+                                    window.location.href = response.redirect;
+                                    return;
+                                }
+
+                                $("#modal").html(response.data);
+
+                                $("#changeForm").validate({
+                                errorClass: "has-error",
+                                validClass: "has-success",
+                                    rules: {
+                                        weight: {
+                                            required: true,
+                                            digits: true
+                                        }
+                                    },
+                                    highlight: function(element, errorClass, validClass) {
+                                        $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                                    },
+                                    unhighlight: function(element, errorClass, validClass) {
+                                        $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                                    },
+                                    submitHandler: function (form) {
+                                        var dataToSend = $("#changeForm").serialize();
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "/professor/courses/edit",
+                                            data: dataToSend,
+                                            dataType: 'json',
+                                            success: function(response) {
+                                                console.log(response)
+                                                if(response.redirect) {
+                                                    window.location.href = response.redirect;
+                                                    return;
+                                                }
+
+                                                if(response.success == true) {
+                                                    response.type = "success";
+                                                    response.message = "Adaugarea a fost facuta cu succes !";
+                                                    dt.ajax.reload();
+                                                    $("#exampleModal").modal('hide');
+                                                }
+                                                else {
+                                                    response.type = "danger";
+                                                }
+
+                                                showNotification(response);
+                                            },
+                                            error: function(xhr, textStatus, errorThrown) {
+                                                alert('Error! Status = ' + xhr.status);
+                                            }
+                                        });
+                                        console.log($("#changeForm").serialize());
+                                    }
+                                });
+
+                                $("#exampleModal").modal();
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                alert('Error! Status = ' + xhr.status);
+                            }
+                        });
+                    }
+                }
+
+                function showNotification(response) {
+                    $.notify({
+                        icon: "add_alert",
+                        message: response.message
+
+                    },{
+                        type: response.type,
+                        timer: 3000,
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        }
+                    });
+                }
+            });
+
+
+        </script>
+</div>
+</html>

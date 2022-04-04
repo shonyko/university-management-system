@@ -1,0 +1,256 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:remove="tag">
+    <div th:remove="tag">
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"><th:block th:text="${title}"/></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div id="myData" th:data-url="${url}" th:data-id="${id}"></div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table id="eventsTable" class="table w-100"></table>
+                                <script type="text/javascript">
+                                    $(function () {
+                                        var url = $('#myData').data('url');  
+                                        var $table = $('#eventsTable');
+                                        var eventsTable = $table.DataTable({
+                                            "pageLength": 15,
+                                            "lengthChange": false,
+                                            "searching": false,
+                                            "select": true,
+                                            "ordering": true,
+                                            "ajax": {
+                                                url: url + "/get",
+                                                type: "POST",
+                                                cache: false,
+                                                dataSrc: function(json) {
+
+
+                                                    json.data.forEach(el => {
+                                                        if(el.professor.secondName) {
+                                                            el.prof = el.professor.secondName + " " + el.professor.firstName;
+                                                        }
+                                                        else {
+                                                            el.prof = " - ";
+                                                        }
+
+                                                        if(el.attendance == 1) {
+                                                            el.participa = "Da";
+                                                        }
+                                                        else {
+                                                            el.participa = "Nu";
+                                                        }
+                                                    });
+
+                                                    return json.data;
+                                                }
+                                            },
+                                            "columns": [
+                                                { "data": "id", "name": "id", "title": "ID", visible: false },
+                                                { "data": "groupId", "name": "groupId", "title": "ID Grup", visible: false },
+                                                { "data": "title", "name": "title", "title": "Titlu" },
+                                                { "data": "description", "name": "description", "title": "Descriere" },
+                                                { "data": "prof", "name": "prof", "title": "Prof" },
+                                                { "data": "date", "name": "date", "title": "Data" },
+                                                { "data": "participa", "name": "participa", "title": "Particip" }
+                                            ],
+                                            dom:    "<'row'<'col-sm-6 dataTables_crud_buttons d-flex flex-row'><'col-sm-6 dataTables_buttons text-right'B>>" +
+                                                    "<'row'<'col-sm-6'l><'col-sm-6'f>>" +
+                                                    "<'row'<'col-sm-12'tr>>" +
+                                                    "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+                                            buttons: [
+                                                { text: "Adauga", className: "btn btn-primary ml-1", action: function(e, dt, node, action) {getAddForm(dt);} }
+                                            ]
+                                        });
+
+                                        eventsTable.on( 'select.dt deselect.dt', function ( e, dt, type, indexes ) {
+
+                                            eventsTable.buttons( 1, ['.edit'] ).enable(
+                                                eventsTable.rows( { selected: true } ).indexes().length === 0 ? false : true );
+                                        } );
+
+                                        new $.fn.dataTable.Buttons( eventsTable, {
+                                        buttons: [
+                                            { text: "Participa", className: "btn btn-primary edit", action: function(e, dt, node, action) {joinEvent(dt);}, attr: {disabled: true} }
+                                        ]
+                                        } );
+
+                                        eventsTable.buttons( 1, null ).container().prependTo(
+                                            $(eventsTable.table().container()).find(".dataTables_crud_buttons")
+                                        );
+
+                                        function getAddForm(t) {
+                                            var id = $('#myData').data('id');  
+                                            $.ajax({
+                                                type: "GET",
+                                                url: "/student/study/" + id + "/events/new",
+                                                dataType: 'json',
+                                                success: function(response) {
+                                                    console.log(response);
+                                                    if(response.redirect) {
+                                                        window.location.href = response.redirect;
+                                                        return;
+                                                    }
+
+                                                    $("#altModal").html(response.data);
+
+                                                    $("#changeForm").validate({
+                                                    errorClass: "has-error",
+                                                    validClass: "has-success",
+                                                        rules: {
+                                                            groupId: {
+                                                                required: true,
+                                                            },
+                                                            title: {
+                                                                required: true
+                                                            },
+                                                            description: {
+                                                                required: false
+                                                            },
+                                                            professor: {
+                                                                required: true
+                                                            },
+                                                            date: {
+                                                                required: true
+                                                            },
+                                                            duration: {
+                                                                required: true
+                                                            },
+                                                            minEntries: {
+                                                                required: true,
+                                                                digits: true,
+                                                                min: 2
+                                                            },
+                                                            availability: {
+                                                                required: true
+                                                            }
+                                                        },
+                                                        highlight: function(element, errorClass, validClass) {
+                                                            $(element).closest('.form-group').addClass(errorClass).removeClass(validClass);
+                                                        },
+                                                        unhighlight: function(element, errorClass, validClass) {
+                                                            $(element).closest('.form-group').addClass(validClass).removeClass(errorClass);
+                                                        },
+                                                        submitHandler: function (form) {
+                                                            var dataToSend = $("#changeForm").serialize();
+                                                            $.ajax({
+                                                                type: "POST",
+                                                                url: url + "/set",
+                                                                data: dataToSend,
+                                                                dataType: 'json',
+                                                                success: function(response) {
+                                                                    console.log(response)
+                                                                    if(response.redirect) {
+                                                                        window.location.href = response.redirect;
+                                                                        return;
+                                                                    }
+
+                                                                    if(response.success == true) {
+                                                                        response.type = "success";
+                                                                        response.message = "Adaugarea a fost facuta cu succes !";
+                                                                        t.ajax.reload(null, false);
+                                                                        $("#exampleAltModal").modal('hide');
+                                                                    }
+                                                                    else {
+                                                                        response.type = "danger";
+                                                                    }
+
+                                                                    showNotification(response);
+                                                                },
+                                                                error: function(xhr, textStatus, errorThrown) {
+                                                                    alert('Error! Status = ' + xhr.status);
+                                                                }
+                                                            });
+                                                            console.log($("#changeForm").serialize());
+                                                        }
+                                                    });
+
+                                                    $("#exampleAltModal").modal();
+                                                },
+                                                error: function(xhr, textStatus, errorThrown) {
+                                                    alert('Error! Status = ' + xhr.status);
+                                                }
+                                            });
+                                            
+                                        }
+
+                                        function joinEvent(dt) {
+                                            var target = dt.rows({ selected: true });
+                                            if(target && target.data()[0]) {
+                                                target = target.data()[0];
+
+                                                if(target['participa'] == "Da") {
+                                                    var response = {};
+                                                    response.type = "danger";
+                                                    response.message = "Deja participi la aceasta activitate !";
+                                                    showNotification(response);
+
+                                                    return;
+                                                }
+
+                                                $.ajax({
+                                                    type: "POST",
+                                                    url:  url + "/" + target['id'],
+                                                    dataType: 'json',
+                                                    success: function(response) {
+                                                        console.log(response);
+                                                        if(response.redirect) {
+                                                            window.location.href = response.redirect;
+                                                            return;
+                                                        }
+
+                                                        if(response.success == true) {
+                                                            response.type = "success";
+                                                            response.message = "Adaugarea a fost facuta cu succes !";
+                                                            dt.ajax.reload();
+                                                            dt.buttons(1, ['.edit'] ).enable(false);
+                                                        }
+                                                        else {
+                                                            response.type = "danger";
+                                                        }
+
+                                                        showNotification(response);
+                                                    },
+                                                    error: function(xhr, textStatus, errorThrown) {
+                                                        alert('Error! Status = ' + xhr.status);
+                                                    }
+                                                });
+                                            }
+                                        }
+
+                                        function showNotification(response) {
+                                            $.notify({
+                                                icon: "add_alert",
+                                                message: response.message
+
+                                            },{
+                                                type: response.type,
+                                                timer: 3000,
+                                                placement: {
+                                                    from: "bottom",
+                                                    align: "right"
+                                                }
+                                            });
+                                        }
+                                    });
+                                </script>
+                            </div>
+                        </div>
+                    </div>   
+                    
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>
